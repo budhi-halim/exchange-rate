@@ -1,0 +1,13 @@
+*
+
+!/.gitignore
+!/requirements.txt
+!/.github/
+!/.github/workflows/
+!/.github/workflows/update-rate.yml
+!/src/
+!/src/main.py
+!/data/
+!/data/history.json
+!/data/candidates.json
+!/data/today.json
