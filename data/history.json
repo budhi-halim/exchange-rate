@@ -40,5 +40,12 @@
     "buffered_rate": 17200,
     "source_ts": "2025-10-04T02:50:33.435845+00:00",
     "note": "finalized from 2 candidates"
+  },
+  {
+    "date": "2025-10-05",
+    "rate": 16750,
+    "buffered_rate": 17200,
+    "source_ts": "2025-10-05T03:06:33.097762+00:00",
+    "note": "finalized from 2 candidates"
   }
 ]
