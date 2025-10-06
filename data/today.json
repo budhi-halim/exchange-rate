@@ -2,8 +2,8 @@
   "date": "2025-10-06",
   "actual_rate": 16700,
   "buffered_rate": 17200,
-  "final": false,
-  "candidates_count": 1,
+  "final": true,
+  "candidates_count": 2,
   "selected_source_ts": "2025-10-06T03:01:07.585902+00:00",
-  "generated_ts_utc": "2025-10-06T03:01:07.587850+00:00"
+  "generated_ts_utc": "2025-10-06T06:18:30.332376+00:00"
 }
