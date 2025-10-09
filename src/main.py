@@ -18,7 +18,6 @@ Files:
 - data/today.json       (today's actual + buffered + final)
 
 """
-
 from __future__ import annotations
 import json
 import re
@@ -26,7 +25,7 @@ import sys
 import statistics
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 import requests
 from bs4 import BeautifulSoup
@@ -54,6 +53,16 @@ HTTP_TIMEOUT = 15
 
 # Jakarta timezone offset
 JAKARTA_UTC_OFFSET_HOURS = 7
+
+# Ordered rate keys mapping to table columns 2..7
+RATE_KEYS = [
+    "e_rate_buying_rate",       # column 2 (td index 1)
+    "e_rate_selling_rate",      # column 3 (td index 2)
+    "tt_counter_buying_rate",   # column 4 (td index 3)
+    "tt_counter_selling_rate",  # column 5 (td index 4)
+    "bank_notes_buying_rate",   # column 6 (td index 5)
+    "bank_notes_selling_rate",  # column 7 (td index 6)
+]
 
 # ----------------------------
 # UTILITIES (I/O & datetime)
@@ -88,12 +97,25 @@ def now_iso_ts() -> str:
 # ----------------------------
 # FETCHING
 # ----------------------------
-def fetch_rate_from_bca() -> tuple[int, str]:
+def _clean_cell_to_int(raw: str) -> Optional[int]:
+    if raw is None:
+        return None
+    # Remove trailing decimal portion like ',00' or '.00'
+    raw = re.sub(r'([.,]\d{1,2})\s*$', '', raw)
+    # Keep digits only
+    digits = re.sub(r'[^\d]', '', raw)
+    if digits:
+        try:
+            return int(digits)
+        except Exception:
+            return None
+    return None
+
+def fetch_rate_from_bca() -> tuple[Dict[str, int], str]:
     """
-    Fetch the BCA page directly (server-side; no CORS proxy).
-    Sends realistic headers to avoid 403, retries briefly,
-    then parses the row containing 'USD'.
-    Returns (rate_int, iso_timestamp_utc).
+    Fetch the BCA page and extract columns 2..7 for the USD row.
+    Returns (rates_dict, iso_timestamp_utc).
+    rates_dict contains keys (RATE_KEYS) with integer values.
     """
     session = requests.Session()
     headers = {
@@ -117,50 +139,90 @@ def fetch_rate_from_bca() -> tuple[int, str]:
             continue
 
     soup = BeautifulSoup(html, "lxml")
-    found: Optional[int] = None
+    found: Optional[Dict[str, int]] = None
 
-    # Attempt: find a row containing USD and extract the 7th <td>
+    # Attempt: find a row containing USD and extract columns 2..7 (td indices 1..6)
     for tr in soup.find_all("tr"):
         txt = (tr.get_text() or "").upper()
         if "USD" in txt:
             tds = tr.find_all("td")
             if len(tds) >= 7:
-                raw = tds[6].get_text(strip=True)
-                # Remove trailing decimal portion like ',00' or '.00'
-                raw = re.sub(r'([.,]\d{1,2})\s*$', '', raw)
-                # Keep digits only
-                digits = re.sub(r'[^\d]', '', raw)
-                if digits:
-                    found = int(digits)
+                values: Dict[str, Optional[int]] = {}
+                for i, key in enumerate(RATE_KEYS, start=1):
+                    raw = tds[i].get_text(strip=True)
+                    values[key] = _clean_cell_to_int(raw)
+                # If any value is missing, attempt fallback using numbers found in row
+                if not all(values[k] is not None for k in RATE_KEYS):
+                    nums = re.findall(r"\d{4,}", tr.get_text())
+                    if len(nums) >= len(RATE_KEYS):
+                        # Map first N numbers to keys in order
+                        for idx, key in enumerate(RATE_KEYS):
+                            try:
+                                values[key] = int(nums[idx])
+                            except Exception:
+                                values[key] = None
+                    elif len(nums) >= 1:
+                        # If only a few numbers found, use the first found number as fallback for missing ones
+                        fallback_val = int(nums[0])
+                        for key in RATE_KEYS:
+                            if values[key] is None:
+                                values[key] = fallback_val
+                # If still missing any, skip this row and continue searching
+                if all(values[k] is not None for k in RATE_KEYS):
+                    # convert Optional[int] -> int
+                    found = {k: int(values[k]) for k in RATE_KEYS}
                     break
-            # Fallback: parse all large numbers in the row and pick the largest
-            nums = re.findall(r"\d{4,}", tr.get_text())
-            if nums:
-                found = max(int(n) for n in nums)
-                break
+            else:
+                # Fallback: parse large numbers in the row and try to map
+                nums = re.findall(r"\d{4,}", tr.get_text())
+                if len(nums) >= len(RATE_KEYS):
+                    found = {}
+                    for idx, key in enumerate(RATE_KEYS):
+                        found[key] = int(nums[idx])
+                    break
+                elif len(nums) >= 1:
+                    # If only one number found, use it for all keys as a last resort
+                    val = int(nums[0])
+                    found = {k: val for k in RATE_KEYS}
+                    break
 
     if found is None:
         raise RuntimeError("USD rate not found when parsing BCA page.")
     return found, now_iso_ts()
 
-def fetch_current_rate() -> tuple[int, str]:
+def fetch_current_rate() -> tuple[Dict[str, int], str]:
     return fetch_rate_from_bca()
 
 # ----------------------------
 # HISTORY / CANDIDATES management
 # ----------------------------
-def load_history_rates() -> List[int]:
-    """Return a list of historical integer rates from history.json."""
+def load_history_rates() -> Dict[str, List[int]]:
+    """Return a dict mapping each rate key to a list of historical integer rates from history.json."""
     hist = read_json(HISTORY_FILE)
     if not hist or not isinstance(hist, list):
-        return []
-    rates = []
+        return {k: [] for k in RATE_KEYS}
+    rates: Dict[str, List[int]] = {k: [] for k in RATE_KEYS}
     for e in hist:
         if isinstance(e, dict):
-            if "rate" in e:
-                rates.append(int(e["rate"]))
-            elif "actual" in e:
-                rates.append(int(e["actual"]))
+            for k in RATE_KEYS:
+                v = e.get(k)
+                if v is None:
+                    # legacy support: check "rate" or "actual" if present (map to bank_notes_selling_rate fallback)
+                    if "rate" in e and k == "bank_notes_selling_rate":
+                        try:
+                            rates[k].append(int(e["rate"]))
+                        except Exception:
+                            pass
+                    elif "actual" in e and k == "bank_notes_selling_rate":
+                        try:
+                            rates[k].append(int(e["actual"]))
+                        except Exception:
+                            pass
+                else:
+                    try:
+                        rates[k].append(int(v))
+                    except Exception:
+                        pass
     return rates
 
 def load_history_entries():
@@ -169,11 +231,15 @@ def load_history_entries():
         return []
     return raw
 
-def save_history_entry(date_s: str, rate: int, buffered: int, source_ts: str, note: Optional[str] = None):
+def save_history_entry(date_s: str, rates: Dict[str, int], buffered: Dict[str, int], source_ts: Dict[str, str], note: Optional[str] = None):
     entries = load_history_entries()
     # remove any existing entry for today
     entries = [e for e in entries if e.get("date") != date_s]
-    new = {"date": date_s, "rate": int(rate), "buffered_rate": int(buffered), "source_ts": source_ts}
+    new = {"date": date_s, "source_ts": source_ts}
+    # include all rates and buffered rates
+    for k in RATE_KEYS:
+        new[k] = int(rates.get(k, 0))
+        new[f"{k}_buffered"] = int(buffered.get(k, 0))
     if note:
         new["note"] = note
     entries.append(new)
@@ -194,16 +260,18 @@ def load_candidates() -> List[dict]:
 def save_candidates(cands: List[dict]):
     write_json(CANDIDATES_FILE, cands)
 
-def write_today_json(actual: int, buffered: int, final: bool, candidates_count: int, selected_source_ts: str):
+def write_today_json(actual: Dict[str, int], buffered: Dict[str, int], final: bool, candidates_count: int, selected_source_ts: Dict[str, str]):
     obj = {
         "date": jakarta_today_date_str(),
-        "actual_rate": int(actual),
-        "buffered_rate": int(buffered),
         "final": bool(final),
         "candidates_count": int(candidates_count),
         "selected_source_ts": selected_source_ts,
         "generated_ts_utc": now_iso_ts(),
     }
+    # include actual rates and buffered rates
+    for k in RATE_KEYS:
+        obj[k] = int(actual.get(k, 0))
+        obj[f"{k}_buffered"] = int(buffered.get(k, 0))
     write_json(TODAY_FILE, obj)
 
 # ----------------------------
@@ -272,32 +340,105 @@ def compute_buffered_rate_from_history(hist_rates: List[int], current_rate: int)
     return round_up_to_hundred(int(round(smooth)))
 
 # ----------------------------
-# SELECTION RULES (first/second execution)
+# SELECTION RULES (first/second execution) - extended for groups
 # ----------------------------
-def choose_final_candidate(cands: List[dict], yesterday_rate: Optional[int]) -> dict:
+def _choose_group_value(a_val: int, b_val: int, yesterday_val: Optional[int]) -> int:
     """
-    cands: list of dicts each with keys: date, rate, source_ts
-    Yesterday logic:
-      - if first.rate == yesterday and second.rate != yesterday -> pick second
-      - if second.rate == yesterday and first.rate != yesterday -> pick first
-      - else -> pick candidate with larger rate (tie -> earlier)
+    Given two candidate values (for deciding a single scalar group),
+    apply the original single-rate logic:
+      - if first == yesterday and second != yesterday -> pick second
+      - if second == yesterday and first != yesterday -> pick first
+      - else -> pick the larger (tie -> first)
+    """
+    if yesterday_val is not None:
+        if a_val == yesterday_val and b_val != yesterday_val:
+            return b_val
+        if b_val == yesterday_val and a_val != yesterday_val:
+            return a_val
+    # tie or both different from yesterday -> pick larger (a preferred on tie)
+    return a_val if a_val >= b_val else b_val
+
+def choose_final_candidate_grouped(cands: List[dict], yesterday_entry: Optional[dict]) -> Dict:
+    """
+    cands: list of dicts each with keys: date, source_ts, and RATE_KEYS
+    yesterday_entry: dict entry from history (may contain RATE_KEYS)
+    Returns a dict with:
+      - selected_rates: mapping RATE_KEYS -> selected int
+      - selected_source_ts: mapping group keys -> source_ts of chosen candidate for that group
+    Grouping rules:
+      - E-rate group: keys 0 and 1 (buy, sell)
+      - TT-counter group: keys 2 and 3
+      - Bank-notes group: keys 4 and 5
+    Selection per group:
+      - If there is only one candidate, use that candidate's values
+      - If two candidates:
+         * if first.rate == yesterday and second.rate != yesterday -> pick second
+         * if second.rate == yesterday and first.rate != yesterday -> pick first
+         * else when all different -> compare selling rates between the two candidates and pick the candidate with higher selling rate; then take that candidate's buy & sell for history.
     """
     if not cands:
         raise RuntimeError("No candidates to choose from.")
+
+    # If only one candidate, straightforward
     if len(cands) == 1:
-        return cands[0]
+        cand = cands[0]
+        selected_rates = {k: int(cand.get(k, 0)) for k in RATE_KEYS}
+        selected_source_ts = { "e_rate": cand.get("source_ts", ""), "tt_counter": cand.get("source_ts", ""), "bank_notes": cand.get("source_ts", "")}
+        return {"selected_rates": selected_rates, "selected_source_ts": selected_source_ts}
+
+    # two candidates - sort chronologically
     c_sorted = sorted(cands, key=lambda x: x.get("source_ts", ""))
     a, b = c_sorted[0], c_sorted[1]
-    yr = yesterday_rate
-    if yr is not None:
-        if a["rate"] == yr and b["rate"] != yr:
-            return b
-        if b["rate"] == yr and a["rate"] != yr:
-            return a
-    if a["rate"] >= b["rate"]:
-        return a
-    else:
-        return b
+
+    # yesterday values per key if available
+    yr = yesterday_entry or {}
+    # Build result
+    selected_rates: Dict[str, int] = {}
+    selected_source_ts: Dict[str, str] = {}
+
+    # Define groups: tuples of (buy_key, sell_key, group_name)
+    groups = [
+        (RATE_KEYS[0], RATE_KEYS[1], "e_rate"),
+        (RATE_KEYS[2], RATE_KEYS[3], "tt_counter"),
+        (RATE_KEYS[4], RATE_KEYS[5], "bank_notes"),
+    ]
+
+    for buy_k, sell_k, gname in groups:
+        a_buy = int(a.get(buy_k, 0))
+        a_sell = int(a.get(sell_k, 0))
+        b_buy = int(b.get(buy_k, 0))
+        b_sell = int(b.get(sell_k, 0))
+        y_buy = yr.get(buy_k) if yr else None
+        y_sell = yr.get(sell_k) if yr else None
+
+        # If either candidate equals yesterday (compare pair-wise by both buy+sell equality),
+        # follow original per-group "if first==yesterday and second!=yesterday -> pick second" semantics.
+        # We'll consider equality by both buy and sell matching yesterday's buy & sell if yesterday provided both.
+        picked_candidate = None
+
+        if y_buy is not None and y_sell is not None:
+            # check full equality with yesterday (both buy & sell)
+            a_equals_yesterday = (a_buy == int(y_buy) and a_sell == int(y_sell))
+            b_equals_yesterday = (b_buy == int(y_buy) and b_sell == int(y_sell))
+            if a_equals_yesterday and not b_equals_yesterday:
+                picked_candidate = b
+            elif b_equals_yesterday and not a_equals_yesterday:
+                picked_candidate = a
+
+        if picked_candidate is None:
+            # all different or unable to compare with yesterday -> compare selling rates between a and b
+            # pick the candidate with higher selling rate (tie -> a)
+            if a_sell >= b_sell:
+                picked_candidate = a
+            else:
+                picked_candidate = b
+
+        # assign selected buy & sell from picked_candidate
+        selected_rates[buy_k] = int(picked_candidate.get(buy_k, 0))
+        selected_rates[sell_k] = int(picked_candidate.get(sell_k, 0))
+        selected_source_ts[gname] = picked_candidate.get("source_ts", "")
+
+    return {"selected_rates": selected_rates, "selected_source_ts": selected_source_ts}
 
 # ----------------------------
 # MAIN FLOW
@@ -305,12 +446,12 @@ def choose_final_candidate(cands: List[dict], yesterday_rate: Optional[int]) -> 
 def main() -> int:
     ensure_data_dir()
 
-    # load history rates for model building
-    hist_rates = load_history_rates()
+    # load history rates for model building (dict of lists per key)
+    hist_rates_map = load_history_rates()
 
-    # fetch current observation
+    # fetch current observation (dict of rates)
     try:
-        actual_rate, src_ts = fetch_current_rate()
+        actual_rates, src_ts = fetch_current_rate()
     except Exception as e:
         print("ERROR: cannot fetch current rate:", e, file=sys.stderr)
         return 2
@@ -319,14 +460,17 @@ def main() -> int:
 
     # Append candidate for today (preserve only today's candidates)
     candidates = load_candidates()
-    new_cand = {"date": today_s, "rate": int(actual_rate), "source_ts": src_ts}
+    # build candidate dict with all rate keys
+    new_cand = {"date": today_s, "source_ts": src_ts}
+    for k in RATE_KEYS:
+        new_cand[k] = int(actual_rates.get(k, 0))
     candidates.append(new_cand)
     # keep only the last two candidates in chronological order
     candidates = sorted(candidates, key=lambda x: x.get("source_ts", ""))[-2:]
     save_candidates(candidates)
 
-    # Get yesterday rate from history, if available
-    yesterday_rate: Optional[int] = None
+    # Get yesterday entry and simplify access
+    yesterday_entry = None
     history_entries = load_history_entries()
     if history_entries:
         try:
@@ -336,45 +480,53 @@ def main() -> int:
         if yesterday_s:
             last_entry_for_yesterday = next((e for e in history_entries[::-1] if e.get("date") == yesterday_s), None)
             if last_entry_for_yesterday:
-                yesterday_rate = int(last_entry_for_yesterday.get("rate") or last_entry_for_yesterday.get("actual") or 0)
+                yesterday_entry = last_entry_for_yesterday
 
-    # If only one candidate -> provisional
+    # If only one candidate -> provisional: compute buffered per rate and write today.json
     if len(candidates) == 1:
         print("First execution today: candidate recorded (provisional).")
-        try:
-            provisional_buffer = compute_buffered_rate_from_history(hist_rates, actual_rate)
-        except Exception as e:
-            print("Warning: provisional buffer computation failed:", e, file=sys.stderr)
-            provisional_buffer = round_up_to_hundred(int(actual_rate) + int(MARGIN))
-        write_today_json(actual=actual_rate, buffered=provisional_buffer, final=False, candidates_count=1, selected_source_ts=src_ts)
-        print(f"Provisional: actual={actual_rate}, provisional_buffer={provisional_buffer}")
+        provisional_buffered: Dict[str, int] = {}
+        for k in RATE_KEYS:
+            try:
+                provisional_buffered[k] = compute_buffered_rate_from_history(hist_rates_map.get(k, []), int(actual_rates.get(k, 0)))
+            except Exception as e:
+                print(f"Warning: provisional buffer computation failed for {k}: {e}", file=sys.stderr)
+                provisional_buffered[k] = round_up_to_hundred(int(actual_rates.get(k, 0)) + int(MARGIN))
+        write_today_json(actual=actual_rates, buffered=provisional_buffered, final=False, candidates_count=1, selected_source_ts={"e_rate": src_ts, "tt_counter": src_ts, "bank_notes": src_ts})
+        print(f"Provisional actual rates: {actual_rates}")
         return 0
 
-    # Two or more candidates -> finalize per rules
+    # Two or more candidates -> finalize per grouped rules
     if len(candidates) >= 2:
-        chosen = choose_final_candidate(candidates, yesterday_rate)
-        chosen_rate = int(chosen["rate"])
-        chosen_src_ts = chosen.get("source_ts", "")
+        chosen_group = choose_final_candidate_grouped(candidates, yesterday_entry)
+        selected_rates = chosen_group.get("selected_rates", {})
+        selected_source_ts = chosen_group.get("selected_source_ts", {})
 
-        try:
-            buffered = compute_buffered_rate_from_history(hist_rates, chosen_rate)
-        except Exception as e:
-            print("Buffer computation error; using margin fallback:", e, file=sys.stderr)
-            buffered = round_up_to_hundred(chosen_rate + int(MARGIN))
+        buffered_map: Dict[str, int] = {}
+        for k in RATE_KEYS:
+            try:
+                buffered_map[k] = compute_buffered_rate_from_history(hist_rates_map.get(k, []), int(selected_rates.get(k, 0)))
+            except Exception as e:
+                print(f"Buffer computation error for {k}; using margin fallback: {e}", file=sys.stderr)
+                buffered_map[k] = round_up_to_hundred(int(selected_rates.get(k, 0)) + int(MARGIN))
 
         # Save finalized history entry (one-per-day)
-        save_history_entry(date_s=today_s, rate=chosen_rate, buffered=buffered, source_ts=chosen_src_ts, note=f"finalized from {len(candidates)} candidates")
+        # source_ts will be a mapping per group (e_rate, tt_counter, bank_notes)
+        save_history_entry(date_s=today_s, rates=selected_rates, buffered=buffered_map, source_ts=selected_source_ts, note=f"finalized from {len(candidates)} candidates")
 
         # Clear today's candidates
         save_candidates([])
 
         # Write today.json final
-        write_today_json(actual=chosen_rate, buffered=buffered, final=True, candidates_count=len(candidates), selected_source_ts=chosen_src_ts)
-        print(f"Finalized today's rate: actual={chosen_rate}, buffered={buffered} (candidates={len(candidates)})")
+        write_today_json(actual=selected_rates, buffered=buffered_map, final=True, candidates_count=len(candidates), selected_source_ts=selected_source_ts)
+        print(f"Finalized today's rates (groups): actual={selected_rates}, buffered={buffered_map} (candidates={len(candidates)})")
         return 0
 
     # fallback (shouldn't hit)
-    write_today_json(actual=actual_rate, buffered=round_up_to_hundred(int(actual_rate) + int(MARGIN)), final=False, candidates_count=len(candidates), selected_source_ts=src_ts)
+    fallback_buffered: Dict[str, int] = {}
+    for k in RATE_KEYS:
+        fallback_buffered[k] = round_up_to_hundred(int(actual_rates.get(k, 0)) + int(MARGIN))
+    write_today_json(actual=actual_rates, buffered=fallback_buffered, final=False, candidates_count=len(candidates), selected_source_ts={"e_rate": src_ts, "tt_counter": src_ts, "bank_notes": src_ts})
     return 0
 
 
