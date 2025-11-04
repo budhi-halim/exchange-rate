@@ -1,13 +1,13 @@
 {
   "date": "2025-11-04",
-  "final": false,
-  "candidates_count": 1,
+  "final": true,
+  "candidates_count": 2,
   "selected_source_ts": {
     "e_rate": "2025-11-04T03:10:02.713126+00:00",
     "tt_counter": "2025-11-04T03:10:02.713126+00:00",
     "bank_notes": "2025-11-04T03:10:02.713126+00:00"
   },
-  "generated_ts_utc": "2025-11-04T03:10:02.720217+00:00",
+  "generated_ts_utc": "2025-11-04T06:18:51.507809+00:00",
   "e_rate_buying_rate": 16720,
   "e_rate_buying_rate_buffered": 17000,
   "e_rate_selling_rate": 16740,
