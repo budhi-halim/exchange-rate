@@ -1,23 +1,23 @@
 {
-  "date": "2025-11-13",
-  "final": true,
-  "candidates_count": 2,
+  "date": "2025-11-14",
+  "final": false,
+  "candidates_count": 1,
   "selected_source_ts": {
-    "e_rate": "2025-11-13T06:19:16.766717+00:00",
-    "tt_counter": "2025-11-13T03:14:31.717644+00:00",
-    "bank_notes": "2025-11-13T03:14:31.717644+00:00"
+    "e_rate": "2025-11-14T03:12:45.843431+00:00",
+    "tt_counter": "2025-11-14T03:12:45.843431+00:00",
+    "bank_notes": "2025-11-14T03:12:45.843431+00:00"
   },
-  "generated_ts_utc": "2025-11-13T06:19:16.776988+00:00",
-  "e_rate_buying_rate": 16723,
+  "generated_ts_utc": "2025-11-14T03:12:45.853253+00:00",
+  "e_rate_buying_rate": 16692,
   "e_rate_buying_rate_buffered": 17100,
-  "e_rate_selling_rate": 16743,
+  "e_rate_selling_rate": 16712,
   "e_rate_selling_rate_buffered": 17100,
-  "tt_counter_buying_rate": 16545,
+  "tt_counter_buying_rate": 16555,
   "tt_counter_buying_rate_buffered": 16900,
-  "tt_counter_selling_rate": 16845,
+  "tt_counter_selling_rate": 16855,
   "tt_counter_selling_rate_buffered": 17200,
-  "bank_notes_buying_rate": 16545,
+  "bank_notes_buying_rate": 16555,
   "bank_notes_buying_rate_buffered": 16900,
-  "bank_notes_selling_rate": 16845,
+  "bank_notes_selling_rate": 16855,
   "bank_notes_selling_rate_buffered": 17200
 }
