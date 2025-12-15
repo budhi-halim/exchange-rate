@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "date": "2025-12-15",
+    "source_ts": "2025-12-15T03:41:32.290707+00:00",
+    "e_rate_buying_rate": 16655,
+    "e_rate_selling_rate": 16675,
+    "tt_counter_buying_rate": 16480,
+    "tt_counter_selling_rate": 16780,
+    "bank_notes_buying_rate": 16480,
+    "bank_notes_selling_rate": 16780
+  }
+]
