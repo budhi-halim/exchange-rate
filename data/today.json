@@ -1,13 +1,13 @@
 {
   "date": "2026-04-02",
-  "final": false,
-  "candidates_count": 1,
+  "final": true,
+  "candidates_count": 2,
   "selected_source_ts": {
     "e_rate": "2026-04-02T04:29:38.915222+00:00",
     "tt_counter": "2026-04-02T04:29:38.915222+00:00",
     "bank_notes": "2026-04-02T04:29:38.915222+00:00"
   },
-  "generated_ts_utc": "2026-04-02T04:29:38.962267+00:00",
+  "generated_ts_utc": "2026-04-02T07:00:53.201422+00:00",
   "e_rate_buying_rate": 17008,
   "e_rate_buying_rate_buffered": 17400,
   "e_rate_selling_rate": 17028,
