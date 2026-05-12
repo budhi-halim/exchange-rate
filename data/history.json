@@ -4471,5 +4471,26 @@
     "bank_notes_selling_rate": 17570,
     "bank_notes_selling_rate_buffered": 18000,
     "note": "finalized from 2 candidates"
+  },
+  {
+    "date": "2026-05-12",
+    "source_ts": {
+      "e_rate": "2026-05-12T08:26:22.259066+00:00",
+      "tt_counter": "2026-05-12T05:38:05.367545+00:00",
+      "bank_notes": "2026-05-12T05:38:05.367545+00:00"
+    },
+    "e_rate_buying_rate": 17440,
+    "e_rate_buying_rate_buffered": 17800,
+    "e_rate_selling_rate": 17540,
+    "e_rate_selling_rate_buffered": 17900,
+    "tt_counter_buying_rate": 17360,
+    "tt_counter_buying_rate_buffered": 17700,
+    "tt_counter_selling_rate": 17660,
+    "tt_counter_selling_rate_buffered": 18000,
+    "bank_notes_buying_rate": 17360,
+    "bank_notes_buying_rate_buffered": 17700,
+    "bank_notes_selling_rate": 17660,
+    "bank_notes_selling_rate_buffered": 18000,
+    "note": "finalized from 2 candidates"
   }
 ]
