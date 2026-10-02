@@ -1,16 +1,16 @@
 {
   "date": "2026-10-02",
-  "final": false,
-  "candidates_count": 1,
+  "final": true,
+  "candidates_count": 2,
   "selected_source_ts": {
-    "e_rate": "2026-10-02T07:58:11.544388+00:00",
+    "e_rate": "2026-10-02T11:35:27.327124+00:00",
     "tt_counter": "2026-10-02T07:58:11.544388+00:00",
     "bank_notes": "2026-10-02T07:58:11.544388+00:00"
   },
-  "generated_ts_utc": "2026-10-02T07:58:11.644246+00:00",
-  "e_rate_buying_rate": 17874,
+  "generated_ts_utc": "2026-10-02T11:35:27.433252+00:00",
+  "e_rate_buying_rate": 17845,
   "e_rate_buying_rate_buffered": 18400,
-  "e_rate_selling_rate": 17900,
+  "e_rate_selling_rate": 17945,
   "e_rate_selling_rate_buffered": 18500,
   "tt_counter_buying_rate": 17700,
   "tt_counter_buying_rate_buffered": 18200,
