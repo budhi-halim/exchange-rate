@@ -11,3 +11,19 @@
 !/data/history.json
 !/data/candidates.json
 !/data/today.json
+# Shared family assets
+!/assets/
+!/assets/family/
+!/assets/family/**
+
+# Read-only viewer
+!/index.html
+
+!/tools/
+!/tools/site-build/
+!/tools/site-build/**
+!/site-build.json
+!/.github/workflows/pages.yml
+/dist/
+/.site-build-*/
+/tools/site-build/node_modules/

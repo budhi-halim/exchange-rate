@@ -1,0 +1,21 @@
+.isi-row-hover {
+  position: fixed;
+  z-index: 1500;
+  pointer-events: none;
+  width: max-content;
+  max-width: min(340px, calc(100vw - 16px));
+  max-height: calc(100dvh - 16px);
+  overflow: hidden;
+  padding: 18px;
+  border: 1px solid var(--isi-border);
+  border-radius: var(--isi-control-radius);
+  box-shadow: var(--isi-shadow);
+  background: var(--isi-surface);
+  color: var(--isi-text);
+  font: 1rem/1.55 var(--isi-font);
+  overflow-wrap: anywhere;
+}
+.isi-row-hover h2 { margin: 0 0 8px; font-size: 1.1rem; letter-spacing: -.02em; }
+.isi-row-hover p { margin: 0; }
+.isi-row-hover [data-muted] { color: var(--isi-muted); font-size: .84rem; }
+.isi-row-hover[hidden] { display: none !important; }

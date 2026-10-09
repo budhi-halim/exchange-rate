@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "include": [
+    "index.html",
+    "assets",
+    "data/today.json",
+    "data/history.json",
+    "data/candidates.json"
+  ]
+}

@@ -1,0 +1,37 @@
+/* === Shared family notification surfaces === */
+.isi-toasts {
+  --toast-slots: 1;
+  position: fixed; inset: auto 0 0 auto; z-index: 2147483647;
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px;
+  width: min(440px, 100%); padding: 20px; box-sizing: border-box;
+  overflow: clip; contain: layout paint; pointer-events: none;
+}
+.isi-toasts:empty { display: none; }
+.isi-toasts:has(> .isi-toast:nth-child(2)) { --toast-slots: 2; }
+.isi-toasts:has(> .isi-toast:nth-child(3)) { --toast-slots: 3; }
+.isi-toast {
+  --notice-color: var(--isi-success);
+  min-width: 0; max-height: calc((100dvh - 40px - (var(--toast-slots) - 1) * 10px) / var(--toast-slots)); overflow: auto;
+  overscroll-behavior: contain; pointer-events: auto;
+  scrollbar-width: thin; scrollbar-color: var(--isi-border) transparent;
+  display: flex; align-items: start; gap: 12px; box-sizing: border-box;
+  padding: 14px 16px; border: 1px solid color-mix(in oklch, var(--notice-color) 24%, var(--isi-border));
+  border-inline-start: 3px solid var(--notice-color); border-radius: var(--isi-control-radius);
+  background: color-mix(in oklch, var(--notice-color) 6%, var(--isi-surface)); color: var(--isi-text);
+  box-shadow: var(--isi-shadow); font: 13px/1.55 var(--isi-font); text-align: start;
+}
+.isi-toast[data-tone="warning"] { --notice-color: var(--isi-warning); }
+.isi-toast[data-tone="error"] { --notice-color: var(--isi-error); }
+.isi-toast-message { flex: 1; min-width: 0; overflow-wrap: anywhere; padding-block: 5px; }
+.isi-toast-mark { flex: none; width: 20px; height: 20px; color: var(--notice-color); margin-top: 6px; }
+.isi-toast-actions { display: flex; flex: none; gap: 4px; }
+.isi-toast .isi-toast-button {
+  appearance: none; display: inline-grid; place-items: center; width: 32px; height: 32px; min-height: 32px;
+  padding: 5px; margin: 0; border: 1px solid transparent; border-radius: 8px;
+  background: transparent; color: var(--isi-muted); cursor: pointer;
+  transition: background 160ms ease, color 160ms ease; box-shadow: none;
+}
+.isi-toast .isi-toast-button:hover { background: var(--isi-subtle); color: var(--isi-text); }
+.isi-toast .isi-toast-button:focus-visible { outline: 2px solid var(--isi-primary); outline-offset: 2px; }
+.isi-toast-button svg { width: 20px; height: 20px; }
+@media (prefers-reduced-motion: reduce) { .isi-toast .isi-toast-button { transition: none; } }

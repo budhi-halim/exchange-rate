@@ -1,0 +1,20 @@
+/* A popup's viewport is derived from its content; vw limits create a sizing loop. */
+html { width: 400px; min-width: 400px; max-height: 600px; overflow-x: hidden; overflow-y: auto; }
+body { width: 100%; margin: 0; padding: 24px; display: flow-root; background: var(--isi-background); }
+.popup-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.popup-header img { flex: none; }
+.popup-header h1, main h1 { font-size: 1.3rem; }
+main > h1 { margin-bottom: 20px !important; }
+#connection-state { display: grid; justify-items: start; gap: 8px; padding: 18px; border: 1px solid var(--isi-border); border-radius: var(--isi-radius); background: var(--isi-surface); margin-bottom: 16px; }
+#connection-state h2 { font-size: .95rem; }
+#connection-state p { font-size: .85rem; }
+#connection-state[data-state="error"] { border-color: var(--isi-error); }
+#connection-state[data-state="ready"] { border-color: var(--isi-success); }
+main > button, form > button, footer > a { width: 100%; }
+main > button { margin-bottom: 10px; }
+footer { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--isi-border); }
+.popup-settings { display: grid; gap: 14px; }
+.popup-settings input { padding-block: 9px !important; }
+.popup-job { display: grid; gap: 12px; }
+.popup-job progress { width: 100%; accent-color: var(--isi-primary); }
+.popup-error { margin-block: 12px !important; }

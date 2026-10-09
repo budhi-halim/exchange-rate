@@ -1,0 +1,8 @@
+[data-isi-theme-control] .isi-theme-symbol { width: 20px; height: 20px; flex: 0 0 auto; transform-origin: center; }
+[data-isi-theme-control][data-scheme="light"] .isi-theme-symbol { animation: isi-theme-sun 24s linear infinite; }
+[data-isi-theme-control][data-scheme="dark"] .isi-theme-symbol { animation: isi-theme-moon 4s ease-in-out infinite alternate; }
+@keyframes isi-theme-sun { to { transform: rotate(360deg); } }
+@keyframes isi-theme-moon { from { transform: rotate(-12deg); } to { transform: rotate(12deg); } }
+@media (prefers-reduced-motion: reduce) {
+  [data-isi-theme-control] .isi-theme-symbol { animation: none; }
+}

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <title>Islandsun AutoFeedback form</title>
+  <rect x="2" y="2" width="60" height="60" rx="19" fill="#245dc0"/>
+  <g stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="17" y="25" width="30" height="27" rx="2" stroke="#ffffff"/>
+    <path d="m22 33 2 2 4-5M33 33h8M23 43h18" stroke="#ffffff"/>
+    <path d="M24 19a8 8 0 0 1 16 0" stroke="#a8d5ff"/>
+  </g>
+</svg>
