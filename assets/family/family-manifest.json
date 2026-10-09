@@ -1,5 +1,5 @@
 {
-  "version": "1.3.6",
+  "version": "1.3.7",
   "design": "A — Refined Forms",
   "files": {
     "assets/icons/family-128.png": "b2dc3857ea2f8126b8afd7ea8b8908fcefc627a5a59ef1f34e67fbded0a12981",
@@ -37,8 +37,8 @@
     "js/extension-session.js": "b2f4f16c1d4d06cd5d0051dcfa36b29d001d7a20911fdee1b33fef1699260c03",
     "js/grouping-ui.js": "4c4fde655f66ad2e85629e2231c14e7443c4bb517fdd8904c9543bcc75b972b3",
     "js/icons.js": "afe2b847eab98ce06681cc4984efe449e64522c3750b6007e23d08b63c537869",
-    "js/launcher-ui.js": "c4d32fd2563db39bb8864dbd77f85961ef8b220f2d6f3c262c9f1f50af56d0ca",
-    "js/multi-select.js": "e2c9d53ab6500b8d385e048e6687ae049150ed3e417335af95ea47093492942b",
+    "js/launcher-ui.js": "8ebd900a946aa8cb6fc3c8c82519356440e4fcbb0178efb9061b20ad2ef8f1ef",
+    "js/multi-select.js": "ad08ee2e30ca25e3257c229cb0ebfd9befc056c43898d398b4d5c17fadafb018",
     "js/navigation.js": "6ee82e2fc42230338625b3e88cb98c9b2bba952195bdbade4685991635c2a325",
     "js/notice-motion.js": "2503d75bd27a205dacdd087c1860a1a2c491c774ac99ac3219f585b91de4f831",
     "js/notifications.js": "2bca610253b8de51a4a5414b1fea7b515951825e6ab20c8a6adfd40a9c1d5074",

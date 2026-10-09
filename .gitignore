@@ -27,3 +27,10 @@
 /dist/
 /.site-build-*/
 /tools/site-build/node_modules/
+
+!/css/
+!/css/*.css
+!/js/
+!/js/*.js
+!/tests/
+!/tests/*.mjs

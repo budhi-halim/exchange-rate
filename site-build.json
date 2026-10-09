@@ -2,6 +2,8 @@
   "schema": 1,
   "include": [
     "index.html",
+    "css",
+    "js",
     "assets",
     "data/today.json",
     "data/history.json",

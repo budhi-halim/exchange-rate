@@ -9,12 +9,11 @@
   <link rel="stylesheet" href="assets/family/css/components.css">
   <link rel="stylesheet" href="assets/family/css/interaction.css">
   <link rel="stylesheet" href="assets/family/css/workspace.css">
-
+  <link rel="stylesheet" href="css/style.css">
   <script type="module" src="assets/family/js/navigation.js"></script>
-  <script type="module" src="assets/family/js/exchange-ui.js"></script>
-
+  <script type="module" src="js/ui.js"></script>
 </head>
-<body class="isi-ui isi-workspace" data-family-app>
+<body class="isi-ui isi-workspace rate-page" data-family-app>
   <header class="isi-header">
     <div class="isi-brand"><img src="assets/family/assets/icons/family.svg" alt=""><span>Exchange Rate<small>ISLANDSUN INDONESIA</small></span></div>
     <div class="isi-header-actions">
@@ -22,8 +21,37 @@
       <button type="button" id="theme-toggle" class="isi-button isi-button--icon isi-theme-toggle" aria-label="Switch color scheme"></button>
     </div>
   </header>
-  <main class="workspace-main">
-  <div class="workspace-title"><h1>Exchange Rate</h1><div class="workspace-actions"><a class="isi-button" href="data/today.json">Current JSON</a><a class="isi-button" href="data/history.json">History JSON</a></div></div>
-  <section id="viewer" class="isi-card" aria-label="Exchange rates"></section></main>
+  <main class="rate-main">
+    <section class="rate-current isi-card" aria-labelledby="current-heading">
+      <div class="rate-current-head"><h1 id="current-heading">Latest rates <span>USD / IDR</span></h1><p id="current-date" class="isi-muted">Loading published rates…</p></div>
+      <div id="current-rates" class="rate-snapshot-strip" tabindex="0" aria-label="Latest published numeric rates"></div>
+    </section>
+    <section class="rate-workspace isi-card" aria-label="Rate history">
+      <div class="rate-view-bar">
+        <div class="rate-view-tabs" role="tablist" aria-label="History view">
+          <button type="button" role="tab" id="graph-tab" aria-controls="graph-panel" aria-selected="true">Graph</button>
+          <button type="button" role="tab" id="table-tab" aria-controls="table-panel" aria-selected="false" tabindex="-1">Table</button>
+        </div>
+        <button type="button" id="refresh-rates" class="isi-button isi-button--quiet">Refresh</button>
+      </div>
+      <p id="rate-status" class="isi-notice" role="status">Loading rates…</p>
+      <div id="graph-panel" class="rate-graph-panel" role="tabpanel" aria-labelledby="graph-tab">
+        <div class="rate-chart-controls" id="chart-controls" inert>
+          <label class="rate-duration">Date range<select id="chart-duration"><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="90" selected>Last 90 days</option><option value="180">Last 6 months</option><option value="365">Last year</option><option value="all">All history</option><option value="custom">Custom dates</option></select></label>
+          <div id="series-control"></div>
+          <div id="custom-range" hidden><label>From<input id="chart-from" type="date" aria-describedby="range-error"></label><label>To<input id="chart-to" type="date" aria-describedby="range-error"></label></div>
+        </div>
+        <p id="range-error" class="rate-range-error" role="alert" hidden></p>
+        <div id="chart-legend" class="rate-legend" aria-label="Displayed series"></div>
+        <div id="chart-host" class="rate-chart-host"></div>
+        <p id="chart-caption" class="rate-chart-caption"></p>
+        <p id="chart-help" class="rate-chart-help">Hover or tap to inspect. With the graph focused, use ← / → to move by day.</p>
+        <output id="chart-announcement" class="isi-sr-only" aria-live="polite"></output>
+      </div>
+      <div id="table-panel" class="rate-table-panel" role="tabpanel" aria-labelledby="table-tab" hidden>
+        <div id="viewer" aria-label="Exchange rate records"></div>
+      </div>
+    </section>
+  </main>
 </body>
 </html>

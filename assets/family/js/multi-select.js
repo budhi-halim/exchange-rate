@@ -1,10 +1,10 @@
 import { element, button } from './workspace.js';
 
 /** Checkbox filters keep selections accessible without modifier keys on touch or keyboard. */
-export function createMultiSelect(label, onChange) {
+export function createMultiSelect(label, onChange, { emptyLabel = 'All' } = {}) {
   const root = element('details', undefined, 'workspace-multiselect');
   const summary = element('summary');
-  const value = element('span', 'All', 'filter-value');
+  const value = element('span', emptyLabel, 'filter-value');
   summary.append(element('span', label), value);
   const panel = element('div', undefined, 'filter-panel');
   const search = element('input'); search.type = 'search'; search.placeholder = 'Find options';
@@ -19,7 +19,7 @@ export function createMultiSelect(label, onChange) {
   panel.append(search, clear, choices, empty); root.append(summary, panel);
 
   function updateValue() {
-    value.textContent = selected.size === 0 ? 'All' : selected.size === 1 ? [...selected][0] : `${selected.size} selected`;
+    value.textContent = selected.size === 0 ? emptyLabel : selected.size === 1 ? [...selected][0] : `${selected.size} selected`;
     summary.dataset.active = String(selected.size > 0);
   }
   function render() {

@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import { dailyRates, rangeBounds, selectRange, valueScale, nearestPoint, dateTime, SERIES } from '../js/chart-logic.js';
+
+const rate = (date, value) => ({ date, tt_counter_selling_rate: value });
+const points = dailyRates(rate('2026-10-09', 18000), [rate('2026-10-09', 17900), rate('2026-10-01', 17750), rate('2026-10-08', null)]);
+assert.equal(points.length, 3, 'One observation per day');
+assert.equal(points.at(-1).values.tt_counter_selling_rate, 18000, 'Current snapshot replaces the same historical day');
+assert.equal(points[1].values.tt_counter_selling_rate, null, 'Missing data is not zero');
+assert.deepEqual(rangeBounds(points, '7'), { from: '2026-10-03', to: '2026-10-09' });
+assert.equal(selectRange(points, rangeBounds(points, '7')).length, 2);
+assert.deepEqual(rangeBounds(points, 'all'), { from: '2026-10-01', to: '2026-10-09' });
+assert.throws(() => rangeBounds(points, 'custom', '2026-10-09', '2026-10-01'), /start date/);
+assert.throws(() => rangeBounds(points, 'custom', '2026-02-30', '2026-10-01'), /valid/);
+assert.equal(Number.isNaN(dateTime('2026-02-29')), true);
+assert.equal(Number.isFinite(dateTime('2024-02-29')), true);
+assert.equal(selectRange(points, { from: '2020-01-01', to: '2020-12-31' }).length, 0);
+assert.equal(nearestPoint(points, dateTime('2026-10-07')), 1);
+assert.equal(nearestPoint(points, dateTime('2026-10-15')), 2);
+assert.equal(nearestPoint([], 0), -1);
+const scale = valueScale(points, ['tt_counter_selling_rate']);
+assert.ok(scale.min < 17750 && scale.max > 18000);
+assert.ok(scale.ticks.length >= 2 && scale.ticks.every(Number.isFinite));
+assert.equal(valueScale(points, []), null);
+assert.ok(valueScale([points.at(-1)], ['tt_counter_selling_rate']).max > 18000);
+assert.throws(() => dailyRates(null, [rate('2026-10-01', -1)]), /Invalid rate value/);
+assert.throws(() => dailyRates(null, [rate('2026-10-01', '18000')]), /Invalid rate value/);
+assert.equal(SERIES.length, 12);
+console.log('PASS graph dates, current/history deduplication, missing values, date windows, nearest-point lookup and value scale');
