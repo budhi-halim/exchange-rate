@@ -19,13 +19,22 @@ export function initializeBackTop({ focusTarget } = {}) {
     };
     settlingFrame = requestAnimationFrame(settle);
   }
+  function smoothTouchReturn() {
+    // Let the compositor apply the momentum cancellation before starting a new scroll.
+    settlingFrame = requestAnimationFrame(() => {
+      settlingFrame = requestAnimationFrame(() => {
+        settlingFrame = 0;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+  }
   function activate({ touch = false, keyboard = false } = {}) {
     cancelSettle();
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (keyboard) focusTarget?.focus({ preventScroll: true });
-    // A touch return skips intermediate off-screen content and cancels momentum.
-    window.scrollTo({ top: 0, behavior: touch || reduced ? 'instant' : 'smooth' });
-    if (touch) settleTouchReturn();
+    if (touch && !reduced) { smoothTouchReturn(); return; }
+    window.scrollTo({ top: 0, behavior: reduced ? 'instant' : 'smooth' });
+    if (touch && reduced) settleTouchReturn();
   }
   const control = button('', event => {
     const handled = suppressClick;
@@ -71,6 +80,7 @@ export function initializeBackTop({ focusTarget } = {}) {
   }, { signal });
   for (const name of ['pointercancel', 'lostpointercapture']) control.addEventListener(name, clearPointer, { signal });
   window.addEventListener('pagehide', () => { cancelSettle(); clearPointer(); suppressClick = false; }, { signal });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) cancelSettle(); }, { signal });
   const update = () => {
     const hidden = window.scrollY <= window.innerHeight;
     const state = hidden ? 'hidden' : 'visible';
