@@ -1,5 +1,5 @@
 {
-  "version": "1.3.7",
+  "version": "1.3.8",
   "design": "A — Refined Forms",
   "files": {
     "assets/icons/family-128.png": "b2dc3857ea2f8126b8afd7ea8b8908fcefc627a5a59ef1f34e67fbded0a12981",
@@ -29,8 +29,8 @@
     "css/theme-control.css": "7ac14f2525f2d54017222e2064d464c298e8bdc3c8710740564fdda5f9679aa8",
     "css/tokens.css": "7f73bce96aae349045b8a9101229c0c00e6f6f48d48eea53c5bf10c3f2870948",
     "css/workbook.css": "c5c89bbebcd70fc39cc381602a8245faf96b1864ba229fef23577fe125e4b4d3",
-    "css/workspace.css": "90971bc4396a13fba002177521d61206ad2b010ea505ddb4886d996378c4551a",
-    "js/back-top.js": "00ba894c20ad139471435677942517cd0e3f4b61034b003ab8d98fa8be4f5084",
+    "css/workspace.css": "31063d81a49f3bafaf9e30344229a5bc2fcc05a3d5fa2e7f43de6e6750494e72",
+    "js/back-top.js": "73429141109b40c6357505fbc9d418aee13f3db41e77f32e79d4bbb0b0c7e1db",
     "js/exchange-logic.js": "db976df5e9aab0701a09643a77b2733e61da20cf2aa6b3b53a854a93e75fac28",
     "js/exchange-service.js": "1ff962a7db7fef615c40c3cac86de0a8ea1930c744fc1d07b20a62476e6b8a57",
     "js/exchange-ui.js": "5c1712b7b65c69012196ac66488b0b248ab9c524d70eba10f622c1bc41d67321",
