@@ -1,9 +1,7 @@
 import { createToastCard } from './toast-card.js';
 import { createNoticeMotion } from './notice-motion.js';
 
-const NORMAL_DURATION = 7000;
-const IMPORTANT_DURATION = 12000;
-const MAXIMUM_DURATION = 30000;
+const TOAST_DURATION = 7000;
 
 /** A bounded transient queue; persistent history remains the caller's responsibility. */
 export function createNotifications(host, { visibleOnly = false, toastClass = '' } = {}) {
@@ -19,7 +17,7 @@ export function createNotifications(host, { visibleOnly = false, toastClass = ''
     if (claiming?.key === key) claiming.cancelled = true;
     const entry = entries.get(key);
     if (!entry || entry.closing) return;
-    entry.closing = true; clearTimeout(entry.timer); clearTimeout(entry.deadlineTimer);
+    entry.closing = true; clearTimeout(entry.timer);
     if (user) entry.onDismiss?.();
     motion.remove(entry.node, () => { entries.delete(key); pump(); });
   }
@@ -37,23 +35,27 @@ export function createNotifications(host, { visibleOnly = false, toastClass = ''
         claiming = null;
         if (!accepted || destroyed || request.cancelled || !available() || (request.isCurrent && !request.isCurrent())) { request.onSkip?.(); continue; }
         const { key, message, tone, onMute } = request;
-        const node = createToastCard(message, { tone, onDismiss: () => dismiss(key, true), onMute });
+        const node = createToastCard(message, { tone, href:request.href, customer:request.customer, onDismiss: () => dismiss(key, true), onMute });
         if (toastClass) node.classList.add(toastClass);
-        const entry = { ...request, node, timer: null, deadline: Date.now() + MAXIMUM_DURATION };
+        const entry = { ...request, node, timer: null, remaining:TOAST_DURATION, startedAt:null, hovered:false };
         entries.set(key, entry); host.append(node); motion.enter(node);
-        entry.deadlineTimer = setTimeout(() => dismiss(key), MAXIMUM_DURATION);
-        const schedule = () => {
-          clearTimeout(entry.timer);
-          const remaining = entry.deadline - Date.now();
-          if (remaining <= 0) { dismiss(key); return; }
-          const duration = ['error', 'warning'].includes(tone) ? IMPORTANT_DURATION : NORMAL_DURATION;
-          if (!entry.closing && !document.hidden) entry.timer = setTimeout(() => dismiss(key), Math.min(duration, remaining));
+        const pause = () => {
+          if (entry.startedAt !== null) {
+            entry.remaining = Math.max(0,entry.remaining-(performance.now()-entry.startedAt));
+          }
+          entry.startedAt = null; clearTimeout(entry.timer);
         };
-        entry.schedule = schedule;
-        node.addEventListener('pointerenter', () => clearTimeout(entry.timer));
-        node.addEventListener('focusin', () => clearTimeout(entry.timer));
-        node.addEventListener('pointerleave', () => { if (!node.contains(document.activeElement)) schedule(); });
-        node.addEventListener('focusout', event => { if (!node.contains(event.relatedTarget) && !node.matches(':hover')) schedule(); });
+        const schedule = () => {
+          if (entry.startedAt !== null || entry.closing || document.hidden || entry.hovered || node.contains(document.activeElement)) return;
+          if (entry.remaining <= 0) { dismiss(key); return; }
+          entry.startedAt = performance.now();
+          entry.timer = setTimeout(() => dismiss(key),entry.remaining);
+        };
+        entry.schedule = schedule; entry.pause = pause;
+        node.addEventListener('pointerenter', () => { entry.hovered = true; pause(); });
+        node.addEventListener('focusin', pause);
+        node.addEventListener('pointerleave', () => { entry.hovered = false; schedule(); });
+        node.addEventListener('focusout', () => queueMicrotask(schedule));
         schedule(); request.onShow?.();
       }
     } finally { pumping = false; }
@@ -70,9 +72,7 @@ export function createNotifications(host, { visibleOnly = false, toastClass = ''
   }
   function resume() {
     for (const entry of entries.values()) {
-      clearTimeout(entry.timer);
-      if (Date.now() >= entry.deadline) { dismiss(entry.key); continue; }
-      if (!document.hidden && !entry.node.contains(document.activeElement) && !entry.node.matches(':hover')) entry.schedule();
+      if (document.hidden) entry.pause(); else entry.schedule();
     }
     pump();
   }
@@ -85,7 +85,7 @@ export function createNotifications(host, { visibleOnly = false, toastClass = ''
       for (const item of queue.splice(0)) item.onSkip?.();
       window.removeEventListener('focus', resume); document.removeEventListener('visibilitychange', resume);
       motion.destroy();
-      for (const entry of entries.values()) { clearTimeout(entry.timer); clearTimeout(entry.deadlineTimer); entry.node.remove(); }
+      for (const entry of entries.values()) { clearTimeout(entry.timer); entry.node.remove(); }
       entries.clear(); if (owned) host.remove();
     },
   };
