@@ -12,14 +12,17 @@ function mark(name) {
   const path = document.createElementNS(svg.namespaceURI, 'path'); path.setAttribute('d', PATHS[name]); svg.append(path); return svg;
 }
 
-export function createToastCard(message, { tone = 'success', href, customer, onDismiss, onMute } = {}) {
+export function createToastCard(message, { tone = 'success', href, newTab = false, customer, onDismiss, onMute } = {}) {
   const node = document.createElement('div'); node.className = 'isi-toast'; node.dataset.tone = tone;
   node.setAttribute('role', tone === 'error' ? 'alert' : 'status'); node.setAttribute('aria-atomic', 'true');
   const symbol = mark(Object.hasOwn(PATHS, tone) ? tone : 'success'); symbol.classList.add('isi-toast-mark');
   let destination;
   try { const url = new URL(href,location.href); if (href && ['http:','https:'].includes(url.protocol)) destination = url.href; } catch { /* Invalid destinations remain plain text. */ }
   const text = document.createElement(destination ? 'a' : 'span'); text.className = 'isi-toast-message'; text.textContent = message;
-  if (destination) text.href = destination;
+  if (destination) {
+    text.href = destination;
+    if (newTab) { text.target = '_blank'; text.rel = 'noopener'; }
+  }
   if (customer) { const name = document.createElement('strong'); name.className = 'isi-toast-customer'; name.textContent = customer; text.prepend(name); }
   const actions = document.createElement('div'); actions.className = 'isi-toast-actions';
   function action(name, label, callback) {

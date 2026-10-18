@@ -4,16 +4,20 @@ import { createNoticeMotion } from './notice-motion.js';
 const TOAST_DURATION = 7000;
 
 /** A bounded transient queue; persistent history remains the caller's responsibility. */
-export function createNotifications(host, { visibleOnly = false, toastClass = '' } = {}) {
+export function createNotifications(host, { toastClass = '' } = {}) {
   const owned = !host;
   if (owned) { host = document.createElement('section'); document.body.append(host); }
   host.classList.add('isi-toasts'); host.setAttribute('aria-label', 'Notifications');
   const entries = new Map(), queue = [], motion = createNoticeMotion();
   let destroyed = false, pumping = false, claiming;
-  const available = () => !visibleOnly || (!document.hidden && document.hasFocus());
+  const available = () => !document.hidden && document.hasFocus();
+  async function release(request) {
+    try { await request.onSkip?.(); }
+    catch { /* The owner reports storage failures; an expired claim can be retried later. */ }
+  }
   function dismiss(key, user = false) {
     const index = queue.findIndex(entry => entry.key === key);
-    if (index >= 0) queue.splice(index, 1)[0].onSkip?.();
+    if (index >= 0) void release(queue.splice(index, 1)[0]);
     if (claiming?.key === key) claiming.cancelled = true;
     const entry = entries.get(key);
     if (!entry || entry.closing) return;
@@ -30,12 +34,22 @@ export function createNotifications(host, { visibleOnly = false, toastClass = ''
         if (entries.has(queue[0].key)) break;
         const request = queue.shift(); claiming = request;
         let accepted = true;
-        try { if (request.beforeShow) accepted = await request.beforeShow(); }
+        try {
+          if (request.beforeShow) accepted = await request.beforeShow();
+          if (request.isCurrent && !request.isCurrent()) accepted = false;
+        }
         catch { accepted = false; }
+        if (!accepted || destroyed || request.cancelled) { await release(request); claiming = null; continue; }
+        if (!available()) {
+          // Release a cross-tab claim while retaining the queued notice for the next activation.
+          await release(request);
+          if (!destroyed && !request.cancelled) queue.unshift(request);
+          claiming = null;
+          break;
+        }
         claiming = null;
-        if (!accepted || destroyed || request.cancelled || !available() || (request.isCurrent && !request.isCurrent())) { request.onSkip?.(); continue; }
         const { key, message, tone, onMute } = request;
-        const node = createToastCard(message, { tone, href:request.href, customer:request.customer, onDismiss: () => dismiss(key, true), onMute });
+        const node = createToastCard(message, { tone, href:request.href, newTab:request.newTab, customer:request.customer, onDismiss: () => dismiss(key, true), onMute });
         if (toastClass) node.classList.add(toastClass);
         const entry = { ...request, node, timer: null, remaining:TOAST_DURATION, startedAt:null, hovered:false };
         entries.set(key, entry); host.append(node); motion.enter(node);
@@ -46,10 +60,10 @@ export function createNotifications(host, { visibleOnly = false, toastClass = ''
           entry.startedAt = null; clearTimeout(entry.timer);
         };
         const schedule = () => {
-          if (entry.startedAt !== null || entry.closing || document.hidden || entry.hovered || node.contains(document.activeElement)) return;
+          if (entry.startedAt !== null || entry.closing || !available() || entry.hovered || node.contains(document.activeElement)) return;
           if (entry.remaining <= 0) { dismiss(key); return; }
           entry.startedAt = performance.now();
-          entry.timer = setTimeout(() => dismiss(key),entry.remaining);
+          entry.timer = setTimeout(() => { if (available()) dismiss(key); else pause(); },entry.remaining);
         };
         entry.schedule = schedule; entry.pause = pause;
         node.addEventListener('pointerenter', () => { entry.hovered = true; pause(); });
@@ -58,7 +72,7 @@ export function createNotifications(host, { visibleOnly = false, toastClass = ''
         node.addEventListener('focusout', () => queueMicrotask(schedule));
         schedule(); request.onShow?.();
       }
-    } finally { pumping = false; }
+    } finally { pumping = false; if (!destroyed && available() && queue.length && !entries.has(queue[0].key) && entries.size < (innerHeight < 600 ? 1 : 3)) queueMicrotask(pump); }
   }
   function show(message, options = {}) {
     const tone = options.tone || 'success', key = options.key || message;
@@ -72,18 +86,19 @@ export function createNotifications(host, { visibleOnly = false, toastClass = ''
   }
   function resume() {
     for (const entry of entries.values()) {
-      if (document.hidden) entry.pause(); else entry.schedule();
+      if (!available()) entry.pause();
+      else { entry.hovered = entry.node.matches(':hover'); entry.schedule(); }
     }
     pump();
   }
-  window.addEventListener('focus', resume); document.addEventListener('visibilitychange', resume);
+  window.addEventListener('focus', resume); window.addEventListener('blur', resume); document.addEventListener('visibilitychange', resume);
   return {
     show, dismiss,
-    clear() { for (const item of queue.splice(0)) item.onSkip?.(); if (claiming) claiming.cancelled = true; for (const key of entries.keys()) dismiss(key); },
+    clear() { for (const item of queue.splice(0)) void release(item); if (claiming) claiming.cancelled = true; for (const key of entries.keys()) dismiss(key); },
     destroy() {
       destroyed = true; if (claiming) claiming.cancelled = true;
-      for (const item of queue.splice(0)) item.onSkip?.();
-      window.removeEventListener('focus', resume); document.removeEventListener('visibilitychange', resume);
+      for (const item of queue.splice(0)) void release(item);
+      window.removeEventListener('focus', resume); window.removeEventListener('blur', resume); document.removeEventListener('visibilitychange', resume);
       motion.destroy();
       for (const entry of entries.values()) { clearTimeout(entry.timer); entry.node.remove(); }
       entries.clear(); if (owned) host.remove();

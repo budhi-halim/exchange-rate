@@ -1,5 +1,5 @@
 {
-  "version": "1.3.12",
+  "version": "1.3.13",
   "design": "A — Refined Forms",
   "files": {
     "assets/icons/family-128.png": "b2dc3857ea2f8126b8afd7ea8b8908fcefc627a5a59ef1f34e67fbded0a12981",
@@ -41,7 +41,7 @@
     "js/multi-select.js": "ad08ee2e30ca25e3257c229cb0ebfd9befc056c43898d398b4d5c17fadafb018",
     "js/navigation.js": "6ee82e2fc42230338625b3e88cb98c9b2bba952195bdbade4685991635c2a325",
     "js/notice-motion.js": "2503d75bd27a205dacdd087c1860a1a2c491c774ac99ac3219f585b91de4f831",
-    "js/notifications.js": "5b7553b5fb0d32c22968595b1bc920c289257e10ecda3e3a16f9dbe37dc85c2b",
+    "js/notifications.js": "f90622cdfe25fddb7eaea39ac448924e0c9fdc25e18994438e9999eb30a025c0",
     "js/readiness.js": "b6cbdf51b7a32aed43093d986247100ce6b5e33d832045c70d03921d437e1ef6",
     "js/row-hover.js": "4191a96999cc7bdfafe4adb141c5a9c05d33b928c51d84d378e6e3dc0d30cdbe",
     "js/table-logic.js": "aa01d0cb689ea4d0d6a1f71664e950abcaa9627df44064be899933ddb075ba15",
@@ -49,7 +49,7 @@
     "js/table-worker.js": "088b48e44c299052e32f2c8c99767ef8281bd52dd1f4f1500e10dd81df22dee6",
     "js/theme-control.js": "739e8ce3a6f6658a47f531c7918a978655ed0ecea92e5317be58aed5c4596beb",
     "js/theme.js": "6d057523462287740e31ad7b6437026334b2098f40eec5231fef366c51a42092",
-    "js/toast-card.js": "330d88315718585e27996ea486678d4d27a03d7f6079fbdd4bfd7dc65b5d28e5",
+    "js/toast-card.js": "9dc486a0bdfdc69b7eed09552650a9ea0b484858f9dbd4255404a5c2ff26f5c9",
     "js/tooltips.js": "152e1771c165d87857e78669c896612d99ca3ee7dda504085a2dc333101c394b",
     "js/workbook-logic.js": "301a7fb36ce71694805850e1ec8814e3c909f667aba980b3c8ea3b585a198f6a",
     "js/workbook-ui.js": "b3a2f079b8beaf28c1258132180c466f7fde372e68b1dcdcab359ffd22627fa9",
