@@ -1,5 +1,5 @@
 import { createToastCard } from './toast-card.js';
-import { createNoticeMotion } from './notice-motion.js';
+import { createToastMotion } from './toast-motion.js';
 
 const TOAST_DURATION = 7000;
 
@@ -8,9 +8,15 @@ export function createNotifications(host, { toastClass = '' } = {}) {
   const owned = !host;
   if (owned) { host = document.createElement('section'); document.body.append(host); }
   host.classList.add('isi-toasts'); host.setAttribute('aria-label', 'Notifications');
-  const entries = new Map(), queue = [], motion = createNoticeMotion();
-  let destroyed = false, pumping = false, claiming;
-  const available = () => !document.hidden && document.hasFocus();
+  const entries = new Map(), queue = [], motion = createToastMotion(host, () => { void pump(); });
+  let destroyed = false, pumping = false, claiming, enabled = true, onBypass;
+  const available = () => enabled && !document.hidden && document.hasFocus();
+  function bypass(request) {
+    if (request.bypassed) return;
+    request.bypassed = true;
+    try { Promise.resolve(onBypass?.(request)).catch(() => {}); }
+    catch { /* The owner handles persistence failures without reopening a suppressed popup. */ }
+  }
   async function release(request) {
     try { await request.onSkip?.(); }
     catch { /* The owner reports storage failures; an expired claim can be retried later. */ }
@@ -45,11 +51,11 @@ export function createNotifications(host, { toastClass = '' } = {}) {
     }
   }
   async function pump() {
-    if (pumping || destroyed || !available()) return;
+    if (pumping || destroyed || motion.busy || !available()) return;
     pumping = true;
     try {
       const limit = innerHeight < 600 ? 1 : 3;
-      while (!destroyed && available() && queue.length && entries.size < limit) {
+      while (!destroyed && !motion.busy && available() && queue.length && entries.size < limit) {
         if (entries.has(queue[0].key)) break;
         const request = queue.shift(); claiming = request;
         let accepted = true;
@@ -58,8 +64,9 @@ export function createNotifications(host, { toastClass = '' } = {}) {
           if (request.isCurrent && !request.isCurrent()) accepted = false;
         }
         catch { accepted = false; }
+        if (!enabled) { bypass(request); request.cancelled = true; }
         if (!accepted || destroyed || request.cancelled) { await release(request); claiming = null; continue; }
-        if (!available()) {
+        if (!available() || motion.busy) {
           // Release a cross-tab claim while retaining the queued notice for the next activation.
           await release(request);
           if (!destroyed && !request.cancelled) queue.unshift(request);
@@ -91,11 +98,12 @@ export function createNotifications(host, { toastClass = '' } = {}) {
         node.addEventListener('focusout', () => queueMicrotask(schedule));
         schedule(); request.onShow?.();
       }
-    } finally { pumping = false; if (!destroyed && available() && queue.length && !entries.has(queue[0].key) && entries.size < (innerHeight < 600 ? 1 : 3)) queueMicrotask(pump); }
+    } finally { pumping = false; if (!destroyed && !motion.busy && available() && queue.length && !entries.has(queue[0].key) && entries.size < (innerHeight < 600 ? 1 : 3)) queueMicrotask(pump); }
   }
   function show(message, options = {}) {
     const tone = options.tone || 'success', key = options.key || message;
     if (destroyed) return false;
+    if (!enabled) { bypass({...options, key, tone, message:String(message).slice(0,4000)}); return true; }
     const existing = entries.get(key) || queue.find(entry => entry.key === key) || (claiming?.key === key ? claiming : null);
     if (existing && existing.message === message && existing.tone === tone && !existing.closing) return true;
     if (existing) dismiss(key);
@@ -113,6 +121,16 @@ export function createNotifications(host, { toastClass = '' } = {}) {
   window.addEventListener('focus', resume); window.addEventListener('blur', resume); document.addEventListener('visibilitychange', resume);
   return {
     show, dismiss,
+    setEnabled(value, handler) {
+      if (handler) onBypass = handler;
+      if (destroyed || enabled === Boolean(value)) return;
+      enabled = Boolean(value);
+      if (enabled) { pump(); return; }
+      for (const request of queue.splice(0)) { bypass(request); void release(request); }
+      if (claiming) { claiming.cancelled = true; bypass(claiming); }
+      for (const entry of entries.values()) { bypass(entry); dismiss(entry.key); }
+      motion.settle();
+    },
     clear() { for (const item of queue.splice(0)) void release(item); if (claiming) claiming.cancelled = true; for (const key of entries.keys()) dismiss(key); },
     destroy() {
       destroyed = true; if (claiming) claiming.cancelled = true;
