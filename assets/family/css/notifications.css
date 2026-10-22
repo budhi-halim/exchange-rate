@@ -23,7 +23,7 @@
 }
 .isi-toast[data-tone="warning"] { --notice-color: var(--isi-warning); }
 .isi-toast[data-tone="error"] { --notice-color: var(--isi-error); }
-.isi-toast-message { flex: 1; min-width: 0; overflow-wrap: anywhere; padding-block: 2px; }
+.isi-toast-message { flex: 1; align-self: center; min-width: 0; overflow-wrap: anywhere; padding-block: 2px; }
 .isi-toast a.isi-toast-message { color: inherit; text-decoration: none; border-radius: inherit; }
 .isi-toast a.isi-toast-message::after { content: ''; position: absolute; inset: 0; border-radius: inherit; }
 .isi-toast a.isi-toast-message:hover::after { background: color-mix(in oklch,var(--isi-primary) 5%,transparent); }

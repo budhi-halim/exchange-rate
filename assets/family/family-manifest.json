@@ -1,5 +1,5 @@
 {
-  "version": "1.3.15",
+  "version": "1.3.16",
   "design": "A — Refined Forms",
   "files": {
     "assets/icons/family-128.png": "b2dc3857ea2f8126b8afd7ea8b8908fcefc627a5a59ef1f34e67fbded0a12981",
@@ -24,7 +24,7 @@
     "css/components.css": "5e5824b3361eeb6ba7be9b2908be8e4ee1d6b52341bd9e6b5ac46e3a10196889",
     "css/extension-popup.css": "5891b83923d6082f7c76c525b9b017dc679c9d5201ce54f2cc14bed6ce11b293",
     "css/interaction.css": "1113f95259e597e32875170a2c5ca6a61304f118ecbd153c8b9188890e2926b6",
-    "css/notifications.css": "e2cab2b641260ec8e964d2ca16b9cded07ff5797c0f39598dbc98bd33c2bd798",
+    "css/notifications.css": "149daf19bdc93c6b6bc7ed692f6c771f4881b52f21418bf3f62ce0bd1555c324",
     "css/row-hover.css": "7784b9c2cb408372df5561393f9b7de6c6f0539724aaa92170223ca2912cc283",
     "css/theme-control.css": "7ac14f2525f2d54017222e2064d464c298e8bdc3c8710740564fdda5f9679aa8",
     "css/tokens.css": "7f73bce96aae349045b8a9101229c0c00e6f6f48d48eea53c5bf10c3f2870948",
