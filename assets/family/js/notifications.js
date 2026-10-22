@@ -16,14 +16,33 @@ export function createNotifications(host, { toastClass = '' } = {}) {
     catch { /* The owner reports storage failures; an expired claim can be retried later. */ }
   }
   function dismiss(key, user = false) {
+    if (user) {
+      const entry = entries.get(key);
+      if (entry && !entry.closing && !entry.dismissing) void dismissByUser(entry);
+      return;
+    }
     const index = queue.findIndex(entry => entry.key === key);
     if (index >= 0) void release(queue.splice(index, 1)[0]);
     if (claiming?.key === key) claiming.cancelled = true;
     const entry = entries.get(key);
     if (!entry || entry.closing) return;
     entry.closing = true; clearTimeout(entry.timer);
-    if (user) entry.onDismiss?.();
     motion.remove(entry.node, () => { entries.delete(key); pump(); });
+  }
+  async function dismissByUser(entry) {
+    entry.dismissing = true; entry.pause();
+    entry.node.setAttribute('aria-busy', 'true');
+    const controls = [...entry.node.querySelectorAll('button')];
+    for (const control of controls) control.disabled = true;
+    try {
+      const accepted = await entry.onDismiss?.();
+      if (!destroyed && accepted !== false && entries.get(entry.key) === entry) dismiss(entry.key);
+    } catch { /* The owner reports a failed action; its notice remains available. */ }
+    finally {
+      entry.dismissing = false; entry.node.removeAttribute('aria-busy');
+      for (const control of controls) control.disabled = false;
+      if (!destroyed && !entry.closing) entry.schedule();
+    }
   }
   async function pump() {
     if (pumping || destroyed || !available()) return;
@@ -60,7 +79,7 @@ export function createNotifications(host, { toastClass = '' } = {}) {
           entry.startedAt = null; clearTimeout(entry.timer);
         };
         const schedule = () => {
-          if (entry.startedAt !== null || entry.closing || !available() || entry.hovered || node.contains(document.activeElement)) return;
+          if (entry.startedAt !== null || entry.closing || entry.dismissing || !available() || entry.hovered || node.contains(document.activeElement)) return;
           if (entry.remaining <= 0) { dismiss(key); return; }
           entry.startedAt = performance.now();
           entry.timer = setTimeout(() => { if (available()) dismiss(key); else pause(); },entry.remaining);
