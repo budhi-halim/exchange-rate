@@ -18,7 +18,8 @@ export function createToastCard(message, { tone = 'success', href, newTab = fals
   const symbol = mark(Object.hasOwn(PATHS, tone) ? tone : 'success'); symbol.classList.add('isi-toast-mark');
   let destination;
   try { const url = new URL(href,location.href); if (href && ['http:','https:'].includes(url.protocol)) destination = url.href; } catch { /* Invalid destinations remain plain text. */ }
-  const text = document.createElement(destination ? 'a' : 'span'); text.className = 'isi-toast-message'; text.textContent = message;
+  const text = document.createElement(destination ? 'a' : 'span'); text.className = 'isi-toast-message';
+  const summary = document.createElement('span'); summary.className = 'isi-toast-summary'; summary.textContent = message; text.append(summary);
   if (destination) {
     text.href = destination;
     if (newTab) { text.target = '_blank'; text.rel = 'noopener'; }
