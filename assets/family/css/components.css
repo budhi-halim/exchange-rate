@@ -1,12 +1,14 @@
 @import url('./notifications.css');
 @import url('./theme-control.css');
 /* === Opt-in baseline; protected documents and host pages are excluded === */
+.isi-theme, .isi-ui { -webkit-tap-highlight-color: transparent; }
 .isi-ui { font-family: var(--isi-font); font-size: 1rem; line-height: 1.55; color: var(--isi-text); }
 .isi-ui, .isi-ui * { box-sizing: border-box; }
 .isi-ui [hidden], .isi-hidden { display: none !important; }
 .isi-ui :where(h1, h2, h3, p, figure) { margin: 0; }
 .isi-ui :where(button, input, select, textarea) { font: inherit; }
 .isi-ui :where(button, a, select, input, summary) { touch-action: manipulation; }
+.isi-ui :where(button:not(:disabled), a[href], summary):active { opacity: .75; }
 .isi-ui :where(img, svg, video) { max-width: 100%; }
 .isi-ui :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible { outline: 3px solid var(--isi-primary); outline-offset: 3px; }
 .isi-ui ::selection { background: var(--isi-primary); color: var(--isi-on-primary); }
